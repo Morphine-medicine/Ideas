@@ -4,6 +4,7 @@ const http = require("http");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const app = express();
+const idea = require("../models/idea");
 
 const api = require("./routes/api");
 
@@ -14,24 +15,18 @@ app.use(
   })
 );
 
+function find(collec, query, callback) {
+  mongoose.connection.db.collection(collec, function(err, collection) {
+    collection.find(query).toArray(callback);
+  });
+}
+
 app.use("/api", api);
 
 mongoose
-  .connect("mongodb://localhost/")
+  .connect("mongodb://127.0.0.1/ideas")
   .then(() => console.log("Connected to MongoDB"))
   .catch(error => console.error(`Couldn't connect to MongoDB ${error}`));
-
-const cardSchema = new mongoose.Schema({
-  idea: String,
-  smth: String,
-  smthElse: String
-});
-
-//не помню зачем это
-async function createIdea(card) {
-  const Card = mongoose.model("Card", cardSchema);
-  Card.insert(card);
-}
 
 app.use(bodyParser.json());
 
@@ -40,12 +35,16 @@ app.use(
     extended: false
   })
 );
+let ideas;
+idea.find((err, ideass) => {
+  ideas = ideass;
+  console.log(ideass);
+});
 
-app.use(express.static(path.join(__dirname, "../dist/english-flashcards")));
+//app.use(express.static(path.join(__dirname, "../dist/english-flashcards")));
 
-//не помню зачем это
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/english-flashcards/index.html"));
+  res.send(ideas);
 });
 const port = process.env.PORT || "3000";
 app.set("port", port);
